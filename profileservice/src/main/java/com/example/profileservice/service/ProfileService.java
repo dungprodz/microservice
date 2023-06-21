@@ -1,12 +1,12 @@
 package com.example.profileservice.service;
 
 import com.example.commonservice.common.CommonException;
-import com.example.profileservice.data.Profile;
+import com.example.commonservice.ultis.Constant;
+import com.example.profileservice.event.EventProducer;
 import com.example.profileservice.model.ProfileDTO;
-import com.example.profileservice.model.requestbody.CreateProfileRequestBody;
 import com.example.profileservice.model.responsebody.GetProfileResponseBody;
 import com.example.profileservice.repository.ProfileRepository;
-import com.example.profileservice.ulti.Common;
+import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,15 +14,20 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Objects;
+
 @Service
 @Slf4j
 public class ProfileService {
-
+    Gson gson = new Gson();
     private final ProfileRepository profileRepository;
 
+    private final EventProducer eventProducer;
+
     @Autowired
-    public ProfileService(ProfileRepository profileRepository) {
+    public ProfileService(ProfileRepository profileRepository, EventProducer eventProducer) {
         this.profileRepository = profileRepository;
+        this.eventProducer = eventProducer;
     }
 
     public Flux<GetProfileResponseBody> getAllProfile() {
@@ -46,33 +51,28 @@ public class ProfileService {
                 .switchIfEmpty(Mono.just(false));
     }
 
-    public Mono<Profile> createNewProfile(CreateProfileRequestBody profileRequestBody) {
-        return checkDuplicate(profileRequestBody.getEmail())
+    public Mono<ProfileDTO> createNewProfile(ProfileDTO profileDTO){
+        return checkDuplicate(profileDTO.getEmail())
                 .flatMap(aBoolean -> {
                     if(Boolean.TRUE.equals(aBoolean)){
                         return Mono.error(new CommonException("PF02","Duplicate profile !", HttpStatus.BAD_REQUEST));
                     }else{
-                        profileRequestBody.setStatus(Common.PENDING);
-                        return createProfile(profileRequestBody);
+                        profileDTO.setStatus(Constant.STATUS_PROFILE_PENDING);
+                        return createProfile(profileDTO);
                     }
                 });
     }
-
-
-    public Mono<Profile> createProfile(CreateProfileRequestBody profileRequestBody) {
-        return Mono.just(profileRequestBody)
-                .map(CreateProfileRequestBody -> {
-                    Profile profile = new Profile();
-                    profile.setId(profileRequestBody.getId());
-                    profile.setName(profileRequestBody.getName());
-                    profile.setRole(profileRequestBody.getRole());
-                    profile.setStatus(profileRequestBody.getStatus());
-                    profile.setEmail(profileRequestBody.getEmail());
-                    return profile;
-                })
-                .flatMap(profileRepository::save)
+    public Mono<ProfileDTO> createProfile(ProfileDTO profileDTO){
+        return Mono.just(profileDTO)
+                .map(ProfileDTO::dtoToEntity)
+                .flatMap(profile -> profileRepository.save(profile))
+                .map(ProfileDTO::entityToDto)
                 .doOnError(throwable -> log.error(throwable.getMessage()))
-                .doOnSuccess(profile -> {
+                .doOnSuccess(dto -> {
+                    if(Objects.equals(dto.getStatus(),Constant.STATUS_PROFILE_PENDING)){
+                        dto.setInitialBalance(profileDTO.getInitialBalance());
+                        eventProducer.send(Constant.PROFILE_ONBOARDING_TOPIC,gson.toJson(dto)).subscribe();
+                    }
                 });
     }
     public Mono<ProfileDTO> updateStatusProfile(ProfileDTO profileDTO){

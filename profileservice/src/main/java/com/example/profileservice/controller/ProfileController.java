@@ -2,6 +2,7 @@ package com.example.profileservice.controller;
 
 import com.example.commonservice.ultis.CommonFunction;
 import com.example.profileservice.data.Profile;
+import com.example.profileservice.model.ProfileDTO;
 import com.example.profileservice.model.requestbody.CreateProfileRequestBody;
 import com.example.profileservice.model.requestbody.DuplicateRequestBody;
 import com.example.profileservice.model.responsebody.GetProfileResponseBody;
@@ -42,10 +43,10 @@ public class ProfileController {
 //    }
 
     @PostMapping("/create")
-    public ResponseEntity<Mono<Profile>> createNewProfile(@RequestBody String requestStr){
+    public ResponseEntity<Mono<ProfileDTO>> createNewProfile(@RequestBody String requestStr){
         Gson gson = new Gson();
         InputStream inputStream = ProfileController.class.getClassLoader().getResourceAsStream(Common.JSON_REQ_CREATE_PROFILE);
         CommonFunction.jsonValidate(inputStream,requestStr);
-        return ResponseEntity.status(HttpStatus.CREATED).body(profileService.createNewProfile(gson.fromJson(requestStr, CreateProfileRequestBody.class)));
+        return ResponseEntity.status(HttpStatus.CREATED).body(profileService.createNewProfile(gson.fromJson(requestStr, ProfileDTO.class)));
     }
 }
