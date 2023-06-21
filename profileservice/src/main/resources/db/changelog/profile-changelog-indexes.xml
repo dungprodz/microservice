@@ -5,7 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
 
-    <changeSet author="profile" id="add-index-table-profile-column-name" runAlways="true">
+    <changeSet author="profile" id="add-index-table-profile-column-name">
         <preConditions onFail="CONTINUE" onFailMessage="index idx_profile_name already exists">
             <not>
                 <indexExists indexName="idx_profile_name" />
@@ -15,7 +15,7 @@
             <column name="name" />
         </createIndex>
     </changeSet>
-    <changeSet author="profile" id="add-index-table-profile-column-email" runAlways="true">
+    <changeSet author="profile" id="add-index-table-profile-column-email">
         <preConditions onFail="CONTINUE" onFailMessage="index idx_profile_email already exists">
             <not>
                 <indexExists indexName="idx_profile_email" />

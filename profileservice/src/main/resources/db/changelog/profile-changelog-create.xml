@@ -6,7 +6,7 @@
       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
 
     <!-- TABLE PROFILE -->
-    <changeSet id="create-table-profile" author="profile" runAlways="true">
+    <changeSet id="create-table-profile" author="profile">
         <preConditions onFail="CONTINUE" onFailMessage="table profile already exists">
             <not>
                 <tableExists tableName="profile" />
@@ -19,7 +19,7 @@
         </createTable>
     </changeSet>
 
-    <changeSet id="table-profile-add-column-email" author="profile" runAlways="true">
+    <changeSet id="table-profile-add-column-email" author="profile">
         <preConditions onFail="CONTINUE" onFailMessage="column email already exists in table profile">
             <not>
                 <columnExists  tableName="profile" columnName="email" />

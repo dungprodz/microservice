@@ -2,6 +2,7 @@ package com.example.profileservice.service;
 
 import com.example.commonservice.common.CommonException;
 import com.example.profileservice.data.Profile;
+import com.example.profileservice.model.ProfileDTO;
 import com.example.profileservice.model.requestbody.CreateProfileRequestBody;
 import com.example.profileservice.model.responsebody.GetProfileResponseBody;
 import com.example.profileservice.repository.ProfileRepository;
@@ -73,5 +74,20 @@ public class ProfileService {
                 .doOnError(throwable -> log.error(throwable.getMessage()))
                 .doOnSuccess(profile -> {
                 });
+    }
+    public Mono<ProfileDTO> updateStatusProfile(ProfileDTO profileDTO){
+        return getDetailProfileByEmail(profileDTO.getEmail())
+                .map(ProfileDTO::dtoToEntity)
+                .flatMap(profile -> {
+                    profile.setStatus(profileDTO.getStatus());
+                    return profileRepository.save(profile);
+                })
+                .map(ProfileDTO::entityToDto)
+                .doOnError(throwable -> log.error(throwable.getMessage()));
+    }
+    public Mono<ProfileDTO> getDetailProfileByEmail(String email){
+        return profileRepository.findByEmail(email)
+                .map(ProfileDTO::entityToDto)
+                .switchIfEmpty(Mono.error(new CommonException("PF03", "Profile not found", HttpStatus.NOT_FOUND)));
     }
 }
