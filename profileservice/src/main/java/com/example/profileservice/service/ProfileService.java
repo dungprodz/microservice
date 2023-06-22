@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Objects;
 
@@ -30,19 +31,10 @@ public class ProfileService {
         this.eventProducer = eventProducer;
     }
 
-    public Flux<GetProfileResponseBody> getAllProfile() {
+    public Flux<ProfileDTO> getAllProfile() {
         return profileRepository.findAll()
-                .map(profile -> {
-                    GetProfileResponseBody getProfileResponseBody = new GetProfileResponseBody();
-                    getProfileResponseBody.setId(profile.getId());
-                    getProfileResponseBody.setName(profile.getName());
-                    getProfileResponseBody.setEmail(profile.getEmail());
-                    getProfileResponseBody.setRole(profile.getRole());
-                    getProfileResponseBody.setStatus(profile.getStatus());
-                    getProfileResponseBody.setInitialBalance(0);
-                    return getProfileResponseBody;
-                })
-                .switchIfEmpty(Mono.error(new Exception("profile empty")));
+                .map(ProfileDTO::entityToDto)
+                .switchIfEmpty(Mono.error(new Exception("Profile list empty")));
     }
 
     public Mono<Boolean> checkDuplicate(String email) {
@@ -62,12 +54,14 @@ public class ProfileService {
                     }
                 });
     }
+
     public Mono<ProfileDTO> createProfile(ProfileDTO profileDTO){
         return Mono.just(profileDTO)
                 .map(ProfileDTO::dtoToEntity)
-                .flatMap(profile -> profileRepository.save(profile))
+                .flatMap(profileRepository::save)
                 .map(ProfileDTO::entityToDto)
                 .doOnError(throwable -> log.error(throwable.getMessage()))
+                .publishOn(Schedulers.boundedElastic())
                 .doOnSuccess(dto -> {
                     if(Objects.equals(dto.getStatus(),Constant.STATUS_PROFILE_PENDING)){
                         dto.setInitialBalance(profileDTO.getInitialBalance());

@@ -23,12 +23,14 @@ import java.io.InputStream;
 public class ProfileController {
     Gson gson = new Gson();
     private final ProfileService profileService;
+
     @Autowired
     public ProfileController(ProfileService profileService) {
         this.profileService = profileService;
     }
+
     @GetMapping
-    public ResponseEntity<Flux<GetProfileResponseBody>> getAllProfile(){
+    public ResponseEntity<Flux<ProfileDTO>> getAllProfile(){
         return ResponseEntity.ok(profileService.getAllProfile());
     }
 
